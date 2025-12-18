@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { getAuthErrorMessage } from '@/lib/error-handling';
 
 export function LoginForm({ onSubmit, onSwitchToSignup, loading }) {
   const [phone, setPhone] = useState('');
@@ -21,7 +22,7 @@ export function LoginForm({ onSubmit, onSwitchToSignup, loading }) {
     try {
       await onSubmit(phone, password);
     } catch (err) {
-      setError(err.message || 'Failed to login');
+      setError(getAuthErrorMessage(err));
     }
   };
 
@@ -98,7 +99,7 @@ export function SignupForm({ onSubmit, onSwitchToLogin, loading }) {
     try {
       await onSubmit(phone, password, displayName);
     } catch (err) {
-      setError(err.message || 'Failed to sign up');
+      setError(getAuthErrorMessage(err));
     }
   };
 
