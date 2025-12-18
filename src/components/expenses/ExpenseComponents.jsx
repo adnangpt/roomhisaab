@@ -11,10 +11,16 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export function ExpenseCard({ expense, members, onDelete, canDelete, periodStatus }) {
   const { user } = useAuth();
-  const isCreator = expense.createdBy === user?.uid;
+  const isCreator = user?.uid === expense.createdBy;
   const canDeleteExpense = canDelete && isCreator && periodStatus === 'active';
   const canEditExpense = canDelete && isCreator && periodStatus === 'active';
+  const isExternal = expense.paidBy === '__EXTERNAL__';
   
+  const getMemberName = (id) => {
+    if (id === '__EXTERNAL__') return 'Not paid yet';
+    return members.find(m => m.id === id)?.displayName || 'Unknown';
+  };
+
   const payer = members.find(m => m.id === expense.paidBy);
   const typeIcons = {
     rent: '🏠',
@@ -24,7 +30,7 @@ export function ExpenseCard({ expense, members, onDelete, canDelete, periodStatu
   };
 
   return (
-    <div className="group relative bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 transition-all hover:shadow-md">
+    <div className="group relative bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-all shadow-sm hover:shadow-md animate-slide-up">
       <div className="flex items-center gap-3">
         {/* Icon */}
         <div className="w-10 h-10 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-xl shrink-0">

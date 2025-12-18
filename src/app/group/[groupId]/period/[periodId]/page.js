@@ -207,7 +207,7 @@ export default function PeriodPage({ params }) {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
       <Navbar />
-      <PageContainer>
+      <PageContainer className="animate-slide-in">
         <PageHeader 
           title={period.name}
           subtitle={group.name}
