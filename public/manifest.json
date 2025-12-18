@@ -1,6 +1,6 @@
 {
     "name": "Room Hisaab",
-    "short_name": "RoomHisaab",
+    "short_name": "Room Hisaab",
     "description": "Expense sharing made simple for roommates.",
     "start_url": "/dashboard",
     "display": "standalone",

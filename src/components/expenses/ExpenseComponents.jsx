@@ -16,81 +16,74 @@ export function ExpenseCard({ expense, members, onDelete, canDelete, periodStatu
   const canEditExpense = canDelete && isCreator && periodStatus === 'active';
   
   const payer = members.find(m => m.id === expense.paidBy);
-  const includedNames = expense.includedMembers
-    .map(id => members.find(m => m.id === id)?.displayName || 'Unknown')
-    .join(', ');
-  
-  const formatDate = (timestamp) => {
-    if (!timestamp) return '';
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleDateString('en-IN', { 
-      day: 'numeric', 
-      month: 'short'
-    });
+  const typeIcons = {
+    rent: '🏠',
+    rashan: '🛒',
+    electricity: '⚡',
+    other: '💸'
   };
-  
+
   return (
-    <Card className="overflow-hidden">
-      <div className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xl">
-              {getExpenseTypeIcon(expense.type)}
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2">
-                <h4 className="font-medium text-slate-900 dark:text-white">
-                  {getExpenseTypeLabel(expense.type)}
-                </h4>
-                <span className="text-xs text-slate-400">
-                  {formatDate(expense.expenseDate)}
-                </span>
-              </div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Paid by {payer?.displayName || 'Unknown'}
-              </p>
-              {expense.description && (
-                <p className="text-sm text-slate-400 mt-1 line-clamp-1">
-                  {expense.description}
-                </p>
-              )}
-              <p className="text-xs text-slate-400 mt-1">
-                Split: {includedNames}
-              </p>
-            </div>
-          </div>
-          <div className="text-right">
-            <p className="font-semibold text-slate-900 dark:text-white">
+    <div className="group relative bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-3 transition-all hover:shadow-md">
+      <div className="flex items-center gap-3">
+        {/* Icon */}
+        <div className="w-10 h-10 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-xl shrink-0">
+          {typeIcons[expense.type] || '💸'}
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <h4 className="font-semibold text-slate-900 dark:text-white truncate text-sm">
+              {expense.type === 'rent' ? 'Rent' : expense.type === 'electricity' ? 'Electricity' : expense.description || 'Expense'}
+            </h4>
+            <span className="font-bold text-slate-900 dark:text-white text-sm shrink-0">
               {formatCurrency(expense.amount)}
+            </span>
+          </div>
+          
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+              {expense.paidBy === '__EXTERNAL__' ? (
+                <span className="text-amber-600 dark:text-amber-400 font-medium">External</span>
+              ) : (
+                `By ${payer?.displayName?.split(' ')[0] || 'Unknown'}`
+              )}
             </p>
-            <div className="flex items-center justify-end gap-2 mt-2">
-              {canEditExpense && (
-                <IconButton
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => onDelete(expense.id, expense.createdBy, 'edit')}
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                </IconButton>
-              )}
-              {canDeleteExpense && (
-                <IconButton
-                  variant="danger"
-                  size="sm"
-                  onClick={() => onDelete(expense.id, expense.createdBy, 'delete')}
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </IconButton>
-              )}
-            </div>
+            <span className="text-slate-300 dark:text-slate-700">•</span>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+              Split: {expense.includedMembers?.length || 0} {expense.includedMembers?.length === 1 ? 'person' : 'people'}
+            </p>
           </div>
         </div>
+
+        {/* Actions */}
+        {canDelete && (
+          <div className="flex items-center gap-1 ml-2">
+            <IconButton
+              variant="ghost"
+              size="sm"
+              onClick={() => onDelete(expense.id, expense.createdBy, 'edit')}
+              className="text-slate-400 hover:text-indigo-600"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+            </IconButton>
+            <IconButton
+              variant="ghost"
+              size="sm"
+              onClick={() => onDelete(expense.id, expense.createdBy, 'delete')}
+              className="text-slate-400 hover:text-red-600"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </IconButton>
+          </div>
+        )}
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -300,6 +293,20 @@ export function AddExpenseModal({
                 <p className="font-medium text-sm">{member.displayName}</p>
               </button>
             ))}
+            {(type === 'rent' || type === 'electricity') && (
+              <button
+                type="button"
+                onClick={() => setPaidBy('__EXTERNAL__')}
+                className={`p-3 rounded-xl text-left transition-all border-2 ${
+                  paidBy === '__EXTERNAL__'
+                    ? 'bg-amber-600 text-white border-amber-400 shadow-lg shadow-amber-500/25'
+                    : 'bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/20'
+                }`}
+              >
+                <p className="font-bold text-sm">Not paid yet</p>
+                <p className="text-[10px] opacity-80">Shared Liability</p>
+              </button>
+            )}
           </div>
         </div>
 
@@ -509,6 +516,20 @@ export function EditExpenseModal({
                 <p className="font-medium text-sm">{member.displayName}</p>
               </button>
             ))}
+            {(type === 'rent' || type === 'electricity') && (
+              <button
+                type="button"
+                onClick={() => setPaidBy('__EXTERNAL__')}
+                className={`p-3 rounded-xl text-left transition-all border-2 ${
+                  paidBy === '__EXTERNAL__'
+                    ? 'bg-amber-600 text-white border-amber-400 shadow-lg shadow-amber-500/25'
+                    : 'bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/30 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/20'
+                }`}
+              >
+                <p className="font-bold text-sm">Not paid yet</p>
+                <p className="text-[10px] opacity-80">Shared Liability</p>
+              </button>
+            )}
           </div>
         </div>
 

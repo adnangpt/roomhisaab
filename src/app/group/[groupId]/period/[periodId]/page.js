@@ -282,8 +282,11 @@ export default function PeriodPage({ params }) {
 
         {/* Expenses List */}
         <div className="mb-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 sticky top-16 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-md py-2 z-10">
             <h3 className="font-semibold text-slate-900 dark:text-white">Expenses</h3>
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              {expenses.length} entries • {formatCurrency(totalExpenses)}
+            </div>
           </div>
 
           {expenses.length === 0 ? (
@@ -296,16 +299,48 @@ export default function PeriodPage({ params }) {
               }
             />
           ) : (
-            <div className="space-y-3">
-              {expenses.map((expense) => (
-                <ExpenseCard
-                  key={expense.id}
-                  expense={expense}
-                  members={activeMembers}
-                  onDelete={handleDeleteExpense}
-                  canDelete={period.status === 'active'}
-                  periodStatus={period.status}
-                />
+            <div className="space-y-6">
+              {Object.entries(
+                expenses.reduce((groups, expense) => {
+                  const date = expense.expenseDate?.toDate 
+                    ? expense.expenseDate.toDate() 
+                    : new Date(expense.expenseDate || Date.now());
+                  
+                  const today = new Date();
+                  const yesterday = new Date();
+                  yesterday.setDate(today.getDate() - 1);
+
+                  let dateStr;
+                  if (date.toDateString() === today.toDateString()) {
+                    dateStr = 'Today';
+                  } else if (date.toDateString() === yesterday.toDateString()) {
+                    dateStr = 'Yesterday';
+                  } else {
+                    dateStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+                  }
+
+                  if (!groups[dateStr]) groups[dateStr] = [];
+                  groups[dateStr].push(expense);
+                  return groups;
+                }, {})
+              ).map(([date, dateExpenses]) => (
+                <div key={date} className="space-y-2">
+                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1">
+                    {date}
+                  </h4>
+                  <div className="space-y-2">
+                    {dateExpenses.map((expense) => (
+                      <ExpenseCard
+                        key={expense.id}
+                        expense={expense}
+                        members={activeMembers}
+                        onDelete={handleDeleteExpense}
+                        canDelete={period.status === 'active'}
+                        periodStatus={period.status}
+                      />
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}

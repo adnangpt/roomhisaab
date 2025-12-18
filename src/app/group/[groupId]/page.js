@@ -183,7 +183,9 @@ export default function GroupPage({ params }) {
   const handleCreatePeriod = async (name, activeMembers) => {
     setActionLoading(true);
     try {
-      await createPeriod(name, activeMembers);
+      // Pass rent info for auto-creation
+      const rentAmount = group.totalRentAmount || 0;
+      await createPeriod(name, activeMembers, rentAmount, activeMembers);
     } finally {
       setActionLoading(false);
     }

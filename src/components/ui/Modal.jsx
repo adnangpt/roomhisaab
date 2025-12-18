@@ -32,7 +32,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }) {
   };
   
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -42,7 +42,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md' }) {
       {/* Modal */}
       <div 
         ref={modalRef}
-        className={`relative w-full ${sizes[size]} bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-2xl shadow-2xl transform transition-all max-h-[90vh] overflow-hidden`}
+        className={`relative w-full ${sizes[size]} bg-white dark:bg-slate-900 rounded-2xl shadow-2xl transform transition-all max-h-[90vh] overflow-hidden`}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">

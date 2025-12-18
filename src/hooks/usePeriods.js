@@ -61,16 +61,9 @@ export function usePeriods(groupId) {
     return () => unsubscribe();
   }, [groupId]);
 
-  const createPeriod = async (name, activeMembers, startDate = new Date()) => {
+  const createPeriod = async (name, activeMembers, rentAmount = 0, rentMembers = [], startDate = new Date()) => {
     if (!user) throw new Error('Must be logged in');
     if (!groupId) throw new Error('Group ID required');
-
-    // Check if there's already an active period - REMOVED for multiple active periods support
-    /*
-    if (activePeriod) {
-      throw new Error('There is already an active period. Close it before creating a new one.');
-    }
-    */
 
     // Initialize member preferences (default all true)
     const memberPreferences = {};
@@ -89,14 +82,32 @@ export function usePeriods(groupId) {
       endDate: null,
       createdAt: serverTimestamp(),
       activeMembers,
-      memberPreferences, // Add preferences
+      memberPreferences,
       confirmedBy: [],
       status: 'active',
       createdBy: user.uid,
     };
 
     const docRef = await addDoc(collection(db, 'periods'), periodData);
-    return docRef.id;
+    const periodId = docRef.id;
+
+    // Automatically add Rent expense if amount > 0
+    if (rentAmount > 0 && rentMembers.length > 0) {
+      await addDoc(collection(db, 'expenses'), {
+        periodId,
+        groupId,
+        type: 'rent',
+        amount: Number(rentAmount),
+        paidBy: '__EXTERNAL__', // Unpaid shared liability
+        includedMembers: rentMembers,
+        expenseDate: startDate,
+        description: 'Monthly Rent (Auto-generated)',
+        createdBy: user.uid,
+        createdAt: serverTimestamp(),
+      });
+    }
+
+    return periodId;
   };
 
   const closePeriod = async (periodId) => {
