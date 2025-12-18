@@ -20,7 +20,8 @@ export default function GroupSettingsPage({ params }) {
     updateElectricityUnit, 
     updateTotalRentAmount, 
     checkUserBalances, 
-    leaveGroup 
+    leaveGroup,
+    deleteGroup
   } = useGroups();
   
   const [electricityUnit, setElectricityUnit] = useState(0);
@@ -127,6 +128,29 @@ export default function GroupSettingsPage({ params }) {
       console.error(err);
       alert('Failed to check balances');
     }
+  };
+
+  const handleDeleteGroup = async () => {
+    setConfirmation({
+      isOpen: true,
+      title: 'Delete Group',
+      message: 'CRITICAL: This will permanently delete this group and ALL its history, periods, and expenses. This action cannot be undone.',
+      variant: 'danger',
+      actionText: 'Delete Everything',
+      onConfirm: async () => {
+        setConfirmation(prev => ({ ...prev, loading: true }));
+        try {
+          await deleteGroup(groupId);
+          router.push('/dashboard');
+        } catch (err) {
+          console.error(err);
+          setConfirmation(prev => ({ ...prev, isOpen: false }));
+          alert('Failed to delete group: ' + err.message);
+        } finally {
+          setConfirmation(prev => ({ ...prev, loading: false }));
+        }
+      }
+    });
   };
 
   if (authLoading || groupLoading) {
@@ -240,7 +264,7 @@ export default function GroupSettingsPage({ params }) {
               Danger Zone
             </h3>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium text-slate-900 dark:text-white">Leave Group</p>
@@ -249,10 +273,25 @@ export default function GroupSettingsPage({ params }) {
                 </p>
               </div>
               <Button 
-                variant="danger" 
+                variant="secondary" 
                 onClick={handleLeaveGroup}
               >
                 Leave Group
+              </Button>
+            </div>
+
+            <div className="pt-6 border-t border-red-100 dark:border-red-900/30 flex items-center justify-between">
+              <div>
+                <p className="font-medium text-red-600 dark:text-red-400">Delete Group</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Permanently delete this group and all its data
+                </p>
+              </div>
+              <Button 
+                variant="danger" 
+                onClick={handleDeleteGroup}
+              >
+                Delete Group
               </Button>
             </div>
           </CardContent>

@@ -12,7 +12,8 @@ import {
   serverTimestamp,
   arrayUnion,
   arrayRemove,
-  getDocs
+  getDocs,
+  deleteDoc
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -155,6 +156,41 @@ export function useGroups() {
     });
   };
 
+  const deleteGroup = async (groupId) => {
+    if (!user) throw new Error('Must be logged in');
+    
+    // 1. Get all periods for this group
+    const periodsRef = collection(db, 'periods');
+    const periodsQ = query(periodsRef, where('groupId', '==', groupId));
+    const periodsSnapshot = await getDocs(periodsQ);
+    
+    // 2. For each period, delete expenses and notes
+    for (const periodDoc of periodsSnapshot.docs) {
+      const periodId = periodDoc.id;
+      
+      // Delete expenses
+      const expensesRef = collection(db, 'expenses');
+      const expensesQ = query(expensesRef, where('periodId', '==', periodId));
+      const expensesSnapshot = await getDocs(expensesQ);
+      const deleteExpensesPromises = expensesSnapshot.docs.map(d => deleteDoc(d.ref));
+      await Promise.all(deleteExpensesPromises);
+      
+      // Delete notes
+      const notesRef = collection(db, 'notes');
+      const notesQ = query(notesRef, where('periodId', '==', periodId));
+      const notesSnapshot = await getDocs(notesQ);
+      const deleteNotesPromises = notesSnapshot.docs.map(d => deleteDoc(d.ref));
+      await Promise.all(deleteNotesPromises);
+      
+      // Delete the period itself
+      await deleteDoc(periodDoc.ref);
+    }
+    
+    // 3. Delete the group itself
+    const groupRef = doc(db, 'groups', groupId);
+    await deleteDoc(groupRef);
+  };
+
   return {
     groups,
     loading,
@@ -166,6 +202,7 @@ export function useGroups() {
     checkUserBalances,
     updateElectricityUnit,
     updateTotalRentAmount,
+    deleteGroup,
   };
 }
 
