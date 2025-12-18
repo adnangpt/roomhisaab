@@ -66,8 +66,21 @@ export function Navbar() {
 
 export function PageContainer({ children, className = '' }) {
   return (
-    <main className={`max-w-3xl mx-auto px-4 py-6 ${className}`}>
-      {children}
+    <main className={`max-w-3xl mx-auto px-4 py-6 min-h-[calc(100vh-3.5rem)] flex flex-col ${className}`}>
+      <div className="flex-1">
+        {children}
+      </div>
+      <footer className="py-8 mt-auto text-center text-xs text-slate-400 dark:text-slate-500">
+        <p className="mb-1">Room Hisaab</p>
+        <a 
+          href="https://www.linkedin.com/in/adnan18298/" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="hover:text-indigo-500 transition-colors"
+        >
+          Made by Adnan
+        </a>
+      </footer>
     </main>
   );
 }

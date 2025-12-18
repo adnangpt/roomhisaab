@@ -87,8 +87,16 @@ export default function HomePage() {
       </div>
 
       {/* Footer */}
-      <footer className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">
-        <p>Made with ❤️ for roommates everywhere</p>
+      <footer className="py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+        <p className="mb-2">Made with ❤️ for roommates everywhere</p>
+        <a 
+          href="https://www.linkedin.com/in/adnan18298/" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline"
+        >
+          Made by Adnan
+        </a>
       </footer>
     </div>
   );
