@@ -8,9 +8,10 @@ import { usePeriod, usePeriods } from '@/hooks/usePeriods';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useNotes } from '@/hooks/useNotes';
 import { getUsersByIds } from '@/lib/auth';
-import { formatCurrency } from '@/lib/calculations';
+import { formatCurrency, calculateNetBalances, calculateExternalShares, calculateTotalLiabilities } from '@/lib/calculations';
 import { Navbar, PageContainer, PageHeader } from '@/components/layout/Layout';
 import { ExpenseCard, AddExpenseModal, EditExpenseModal } from '@/components/expenses/ExpenseComponents';
+import { CollapsibleExpenseGroups } from '@/components/expenses/CollapsibleExpenseGroups';
 import { PeriodSettingsModal, AddMemberToPeriodModal } from '@/components/periods/PeriodComponents';
 import { SettlementView, NotesSection } from '@/components/settlements/SettlementComponents';
 import { Button } from '@/components/ui/Button';
@@ -27,7 +28,7 @@ export default function PeriodPage({ params }) {
   const { updateElectricityUnit } = useGroups();
   const { period, loading: periodLoading } = usePeriod(periodId);
   const { closePeriod, confirmSettlement, completePeriod, updateMemberPreferences, addMemberToPeriod } = usePeriods(groupId);
-  const { expenses, loading: expensesLoading, addExpense, deleteExpense, updateExpense, totalExpenses, expensesByType } = useExpenses(periodId);
+  const { expenses, loading: expensesLoading, addExpense, addBulkExpenses, deleteExpense, updateExpense, totalExpenses, expensesByType } = useExpenses(periodId);
   const { notes, loading: notesLoading, addNote } = useNotes(periodId);
   
   const [allMembers, setAllMembers] = useState([]);
@@ -66,10 +67,15 @@ export default function PeriodPage({ params }) {
 
   const activeMembers = allMembers.filter(m => period?.activeMembers?.includes(m.id));
 
-  const handleAddExpense = async (expenseData) => {
+  const handleAddExpense = async (expenseData, isBulk = false) => {
     setActionLoading(true);
     try {
-      await addExpense({ ...expenseData, groupId });
+      if (isBulk) {
+        const bulkData = expenseData.map(exp => ({ ...exp, groupId }));
+        await addBulkExpenses(bulkData);
+      } else {
+        await addExpense({ ...expenseData, groupId });
+      }
     } finally {
       setActionLoading(false);
     }
@@ -236,6 +242,9 @@ export default function PeriodPage({ params }) {
                   </Button>
                 </div>
               )}
+              <Badge variant="secondary" className="text-xs">
+                {activeMembers.length} {activeMembers.length === 1 ? 'member' : 'members'}
+              </Badge>
               <StatusBadge status={period.status} />
             </div>
           }
@@ -248,15 +257,31 @@ export default function PeriodPage({ params }) {
               <p className="text-2xl font-bold text-slate-900 dark:text-white">
                 {formatCurrency(totalExpenses)}
               </p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Total Expenses</p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-bold">Total Expenses</p>
+              <p className="text-[9px] text-slate-400">Incl. Rent & Electricity</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-indigo-50 dark:bg-indigo-900/10 border-indigo-100 dark:border-indigo-900/30">
             <CardContent className="py-4 text-center">
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                {expenses.length}
+              <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                {(() => {
+                  const balances = calculateNetBalances(expenses, period.activeMembers);
+                  const externalShares = calculateExternalShares(expenses);
+                  const totalLiabilities = calculateTotalLiabilities(balances, externalShares, period.activeMembers);
+                  const myTotal = totalLiabilities[user?.uid] || 0;
+                  return formatCurrency(Math.abs(myTotal));
+                })()}
               </p>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Transactions</p>
+              <p className="text-[10px] text-indigo-500 dark:text-indigo-400 uppercase tracking-wider font-bold">Your Share</p>
+              <p className="text-[9px] text-indigo-400/80">
+                {(() => {
+                  const balances = calculateNetBalances(expenses, period.activeMembers);
+                  const externalShares = calculateExternalShares(expenses);
+                  const totalLiabilities = calculateTotalLiabilities(balances, externalShares, period.activeMembers);
+                  const myTotal = totalLiabilities[user?.uid] || 0;
+                  return myTotal >= 0 ? 'To receive' : 'To pay';
+                })()}
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -275,6 +300,33 @@ export default function PeriodPage({ params }) {
                     <span className="font-medium text-slate-900 dark:text-white">{formatCurrency(amount)}</span>
                   </div>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Payment Summary */}
+        {activeMembers.length > 0 && expenses.length > 0 && (
+          <Card className="mb-6">
+            <CardHeader>
+              <h3 className="font-semibold text-slate-900 dark:text-white">Payment Summary</h3>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {activeMembers.map(member => {
+                  const totalPaid = expenses
+                    .filter(exp => exp.paidBy === member.id)
+                    .reduce((sum, exp) => sum + exp.amount, 0);
+                  
+                  return (
+                    <div key={member.id} className="flex justify-between items-center">
+                      <span className="text-slate-600 dark:text-slate-400">{member.displayName}</span>
+                      <span className="font-medium text-slate-900 dark:text-white">
+                        {formatCurrency(totalPaid)}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -299,50 +351,13 @@ export default function PeriodPage({ params }) {
               }
             />
           ) : (
-            <div className="space-y-6">
-              {Object.entries(
-                expenses.reduce((groups, expense) => {
-                  const date = expense.expenseDate?.toDate 
-                    ? expense.expenseDate.toDate() 
-                    : new Date(expense.expenseDate || Date.now());
-                  
-                  const today = new Date();
-                  const yesterday = new Date();
-                  yesterday.setDate(today.getDate() - 1);
-
-                  let dateStr;
-                  if (date.toDateString() === today.toDateString()) {
-                    dateStr = 'Today';
-                  } else if (date.toDateString() === yesterday.toDateString()) {
-                    dateStr = 'Yesterday';
-                  } else {
-                    dateStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-                  }
-
-                  if (!groups[dateStr]) groups[dateStr] = [];
-                  groups[dateStr].push(expense);
-                  return groups;
-                }, {})
-              ).map(([date, dateExpenses]) => (
-                <div key={date} className="space-y-2">
-                  <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-1">
-                    {date}
-                  </h4>
-                  <div className="space-y-2">
-                    {dateExpenses.map((expense) => (
-                      <ExpenseCard
-                        key={expense.id}
-                        expense={expense}
-                        members={activeMembers}
-                        onDelete={handleDeleteExpense}
-                        canDelete={period.status === 'active'}
-                        periodStatus={period.status}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <CollapsibleExpenseGroups
+              expenses={expenses}
+              members={activeMembers}
+              onDelete={handleDeleteExpense}
+              onEdit={(expenseId) => handleDeleteExpense(expenseId, null, 'edit')}
+              period={period}
+            />
           )}
         </div>
 
@@ -391,8 +406,8 @@ export default function PeriodPage({ params }) {
         onClose={() => setShowAddExpenseModal(false)}
         onSubmit={handleAddExpense}
         members={activeMembers}
-        lastElectricityUnit={group.lastElectricityUnit || 0}
-        totalRentAmount={group.totalRentAmount}
+        lastElectricityUnit={period.lastElectricityUnit || group.lastElectricityUnit || 0}
+        totalRentAmount={period.totalRentAmount || group.totalRentAmount}
         memberPreferences={period.memberPreferences}
         onUpdateElectricity={handleUpdateElectricity}
         loading={actionLoading}
@@ -403,6 +418,8 @@ export default function PeriodPage({ params }) {
         onClose={() => setShowSettingsModal(false)}
         members={activeMembers}
         initialPreferences={period.memberPreferences}
+        initialRentAmount={period.totalRentAmount || group.totalRentAmount}
+        initialElectricityUnit={period.lastElectricityUnit || group.lastElectricityUnit}
         onSave={handleSaveSettings}
         loading={actionLoading}
       />

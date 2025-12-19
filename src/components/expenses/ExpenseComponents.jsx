@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
 import { Button, IconButton } from '@/components/ui/Button';
@@ -105,14 +105,27 @@ export function AddExpenseModal({
   loading 
 }) {
   const { user } = useAuth();
+  const [mode, setMode] = useState('single'); // 'single' or 'bulk'
   const [type, setType] = useState('rashan');
   const [amount, setAmount] = useState('');
+  const [bulkAmounts, setBulkAmounts] = useState('');
   const [paidBy, setPaidBy] = useState('');
   const [includedMembers, setIncludedMembers] = useState([]);
   const [description, setDescription] = useState('');
   const [expenseDate, setExpenseDate] = useState(new Date().toISOString().split('T')[0]);
   const [electricityUnit, setElectricityUnit] = useState(lastElectricityUnit || 0);
   const [error, setError] = useState('');
+
+  // Calculate bulk total in real-time
+  const bulkTotal = useMemo(() => {
+    if (mode !== 'bulk' || !bulkAmounts.trim()) return 0;
+    
+    const lines = bulkAmounts.split('\n');
+    return lines
+      .map(line => line.trim())
+      .filter(line => line && !isNaN(parseFloat(line)))
+      .reduce((sum, line) => sum + parseFloat(line), 0);
+  }, [mode, bulkAmounts]);
 
   // Initialize defaults when modal opens or type changes
   useEffect(() => {
@@ -152,9 +165,16 @@ export function AddExpenseModal({
     e.preventDefault();
     setError('');
     
-    if (!amount || parseFloat(amount) <= 0) {
-      setError('Please enter a valid amount');
-      return;
+    if (mode === 'single') {
+      if (!amount || parseFloat(amount) <= 0) {
+        setError('Please enter a valid amount');
+        return;
+      }
+    } else {
+      if (!bulkAmounts.trim()) {
+        setError('Please enter at least one amount');
+        return;
+      }
     }
     
     if (!paidBy) {
@@ -177,14 +197,37 @@ export function AddExpenseModal({
     }
     
     try {
-      await onSubmit({
-        type,
-        amount: parseFloat(amount),
-        paidBy,
-        includedMembers,
-        description,
-        expenseDate: new Date(expenseDate),
-      });
+      if (mode === 'single') {
+        await onSubmit({
+          type,
+          amount: parseFloat(amount),
+          paidBy: (type === 'rent' || type === 'electricity') ? '__EXTERNAL__' : paidBy,
+          includedMembers,
+          description,
+          expenseDate: new Date(expenseDate),
+        });
+      } else {
+        // Parse bulk amounts
+        const lines = bulkAmounts.split('\n');
+        const validExpenses = lines
+          .map(line => line.trim())
+          .filter(line => line && !isNaN(parseFloat(line)))
+          .map(line => ({
+            type,
+            amount: parseFloat(line),
+            paidBy: (type === 'rent' || type === 'electricity') ? '__EXTERNAL__' : paidBy,
+            includedMembers,
+            description,
+            expenseDate: new Date(expenseDate),
+          }));
+
+        if (validExpenses.length === 0) {
+          setError('No valid amounts found');
+          return;
+        }
+
+        await onSubmit(validExpenses, true); // Pass true to indicate bulk
+      }
       
       // Update electricity unit if changed
       if (type === 'electricity' && electricityUnit !== lastElectricityUnit) {
@@ -199,8 +242,10 @@ export function AddExpenseModal({
   };
 
   const resetForm = () => {
+    setMode('single');
     setType('rashan');
     setAmount('');
+    setBulkAmounts('');
     setDescription('');
     setExpenseDate(new Date().toISOString().split('T')[0]);
     setError('');
@@ -223,10 +268,36 @@ export function AddExpenseModal({
     { value: 'rent', label: '🏠 Rent' },
     { value: 'rashan', label: '🛒 Rashan' },
     { value: 'electricity', label: '⚡ Electricity' },
+    { value: 'other', label: '💸 Other' },
   ];
 
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Add Expense" size="lg">
+      <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl mb-6">
+        <button
+          type="button"
+          onClick={() => setMode('single')}
+          className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+            mode === 'single'
+              ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+          }`}
+        >
+          Single Entry
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode('bulk')}
+          className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
+            mode === 'bulk'
+              ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+              : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+          }`}
+        >
+          Bulk Add 🚀
+        </button>
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Expense Type */}
         <div>
@@ -269,15 +340,40 @@ export function AddExpenseModal({
           </div>
         )}
 
-        {/* Amount */}
-        <Input
-          label="Amount (₹)"
-          type="number"
-          placeholder="0"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          autoFocus
-        />
+        {/* Amount / Bulk Amounts */}
+        {mode === 'single' ? (
+          <Input
+            label="Amount (₹)"
+            type="number"
+            placeholder="0"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            autoFocus
+          />
+        ) : (
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+              Amounts (one per line)
+            </label>
+            <Textarea
+              placeholder="40&#10;60&#10;70&#10;220"
+              value={bulkAmounts}
+              onChange={(e) => setBulkAmounts(e.target.value)}
+              rows={5}
+              className="font-mono"
+            />
+            <div className="flex items-center justify-between mt-2">
+              <p className="text-[10px] text-slate-500">
+                Tip: You can copy-paste a list of numbers from your notes.
+              </p>
+              {bulkTotal > 0 && (
+                <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+                  Total: ₹{bulkTotal.toLocaleString('en-IN')}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Paid By */}
         <div>
@@ -347,8 +443,8 @@ export function AddExpenseModal({
 
         {/* Description */}
         <Textarea
-          label="Description (Optional)"
-          placeholder="What was this expense for?"
+          label={mode === 'single' ? "Description (Optional)" : "Description Prefix (Optional)"}
+          placeholder={mode === 'single' ? "What was this expense for?" : "e.g., Grocery"}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={2}
@@ -373,7 +469,7 @@ export function AddExpenseModal({
             Cancel
           </Button>
           <Button type="submit" className="flex-1" loading={loading}>
-            Add Expense
+            {mode === 'single' ? 'Add Expense' : 'Add All Expenses'}
           </Button>
         </div>
       </form>

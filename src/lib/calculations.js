@@ -19,6 +19,8 @@ export function calculateSharePerUser(expenses) {
   
   expenses.forEach(expense => {
     const { amount, includedMembers } = expense;
+    if (!includedMembers || includedMembers.length === 0) return;
+    
     const sharePerPerson = amount / includedMembers.length;
     
     includedMembers.forEach(memberId => {
@@ -37,6 +39,8 @@ export function calculateExternalShares(expenses) {
     if (expense.paidBy !== '__EXTERNAL__') return;
     
     const { amount, includedMembers } = expense;
+    if (!includedMembers || includedMembers.length === 0) return;
+    
     const sharePerPerson = amount / includedMembers.length;
     
     includedMembers.forEach(memberId => {

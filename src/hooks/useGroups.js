@@ -124,6 +124,33 @@ export function useGroups() {
     await updateDoc(groupRef, {
       members: arrayRemove(memberId),
     });
+
+    // Also remove from all active periods and sync rent
+    const periodsRef = collection(db, 'periods');
+    const q = query(periodsRef, where('groupId', '==', groupId), where('status', '==', 'active'));
+    const periodsSnapshot = await getDocs(q);
+    
+    for (const periodDoc of periodsSnapshot.docs) {
+      const periodData = periodDoc.data();
+      if (periodData.activeMembers?.includes(memberId)) {
+        const newMembers = periodData.activeMembers.filter(id => id !== memberId);
+        const newPreferences = { ...periodData.memberPreferences };
+        delete newPreferences[memberId];
+        
+        await updateDoc(periodDoc.ref, {
+          activeMembers: newMembers,
+          memberPreferences: newPreferences
+        });
+        
+        // Sync rent split for this period
+        const expensesRef = collection(db, 'expenses');
+        const rentQ = query(expensesRef, where('periodId', '==', periodDoc.id), where('type', '==', 'rent'));
+        const rentSnapshot = await getDocs(rentQ);
+        for (const rentDoc of rentSnapshot.docs) {
+          await updateDoc(rentDoc.ref, { includedMembers: newMembers });
+        }
+      }
+    }
   };
 
   const leaveGroup = async (groupId) => {
@@ -140,6 +167,33 @@ export function useGroups() {
     await updateDoc(groupRef, {
       members: arrayRemove(user.uid),
     });
+
+    // Also remove from all active periods and sync rent
+    const periodsRef = collection(db, 'periods');
+    const q = query(periodsRef, where('groupId', '==', groupId), where('status', '==', 'active'));
+    const periodsSnapshot = await getDocs(q);
+    
+    for (const periodDoc of periodsSnapshot.docs) {
+      const periodData = periodDoc.data();
+      if (periodData.activeMembers?.includes(user.uid)) {
+        const newMembers = periodData.activeMembers.filter(id => id !== user.uid);
+        const newPreferences = { ...periodData.memberPreferences };
+        delete newPreferences[user.uid];
+        
+        await updateDoc(periodDoc.ref, {
+          activeMembers: newMembers,
+          memberPreferences: newPreferences
+        });
+        
+        // Sync rent split for this period
+        const expensesRef = collection(db, 'expenses');
+        const rentQ = query(expensesRef, where('periodId', '==', periodDoc.id), where('type', '==', 'rent'));
+        const rentSnapshot = await getDocs(rentQ);
+        for (const rentDoc of rentSnapshot.docs) {
+          await updateDoc(rentDoc.ref, { includedMembers: newMembers });
+        }
+      }
+    }
   };
 
   const updateElectricityUnit = async (groupId, unit) => {

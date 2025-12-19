@@ -175,11 +175,17 @@ export function PeriodSettingsModal({
   isOpen, 
   onClose, 
   members, 
-  initialPreferences, 
+  initialPreferences,
+  initialRentAmount,
+  initialElectricityAmount,
+  initialElectricityUnit,
   onSave, 
   loading 
 }) {
   const [preferences, setPreferences] = useState(initialPreferences || {});
+  const [rentAmount, setRentAmount] = useState(initialRentAmount || '');
+  const [electricityAmount, setElectricityAmount] = useState(initialElectricityAmount || '');
+  const [electricityUnit, setElectricityUnit] = useState(initialElectricityUnit || '');
   const [error, setError] = useState('');
 
   // Initialize if empty
@@ -204,7 +210,12 @@ export function PeriodSettingsModal({
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await onSave(preferences);
+      await onSave({
+        preferences,
+        rentAmount: rentAmount ? parseFloat(rentAmount) : null,
+        electricityAmount: electricityAmount ? parseFloat(electricityAmount) : null,
+        electricityUnit: electricityUnit === '' ? 0 : (typeof electricityUnit === 'number' ? electricityUnit : parseFloat(electricityUnit) || 0)
+      });
       onClose();
     } catch (err) {
       setError(err.message || 'Failed to save settings');
@@ -213,48 +224,95 @@ export function PeriodSettingsModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Period Settings" size="lg">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-          Configure which expenses each member shares. Uncheck items they don't contribute to.
-        </p>
-
-        <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-          {members.map(member => (
-            <div key={member.id} className="p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-              <h4 className="font-medium text-slate-900 dark:text-white mb-3">
-                {member.displayName}
-              </h4>
-              <div className="flex flex-wrap gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={preferences[member.id]?.rent ?? true}
-                    onChange={() => handleToggle(member.id, 'rent')}
-                    className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
-                  />
-                  <span className="text-sm text-slate-700 dark:text-slate-300">🏠 Rent</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={preferences[member.id]?.rashan ?? true}
-                    onChange={() => handleToggle(member.id, 'rashan')}
-                    className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
-                  />
-                  <span className="text-sm text-slate-700 dark:text-slate-300">🛒 Rashan</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={preferences[member.id]?.electricity ?? true}
-                    onChange={() => handleToggle(member.id, 'electricity')}
-                    className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
-                  />
-                  <span className="text-sm text-slate-700 dark:text-slate-300">⚡ Electricity</span>
-                </label>
-              </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Rent & Electricity Settings */}
+        <div className="space-y-4">
+          <h4 className="font-semibold text-slate-900 dark:text-white">Period Amounts</h4>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Total Rent (₹)
+              </label>
+              <input
+                type="number"
+                value={rentAmount}
+                onChange={(e) => setRentAmount(e.target.value)}
+                placeholder="e.g., 2650"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
             </div>
-          ))}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Electricity Bill (₹)
+              </label>
+              <input
+                type="number"
+                value={electricityAmount}
+                onChange={(e) => setElectricityAmount(e.target.value)}
+                placeholder="e.g., 500"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                Last Electricity Unit
+              </label>
+              <input
+                type="number"
+                value={electricityUnit}
+                onChange={(e) => setElectricityUnit(e.target.value)}
+                placeholder="e.g., 1500"
+                className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Member Preferences */}
+        <div className="space-y-4">
+          <h4 className="font-semibold text-slate-900 dark:text-white">Member Preferences</h4>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Configure which expenses each member shares. Uncheck items they don't contribute to.
+          </p>
+
+          <div className="space-y-3 max-h-[40vh] overflow-y-auto">
+            {members.map(member => (
+              <div key={member.id} className="p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                <h5 className="font-medium text-slate-900 dark:text-white mb-3">
+                  {member.displayName}
+                </h5>
+                <div className="flex flex-wrap gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={preferences[member.id]?.rent ?? true}
+                      onChange={() => handleToggle(member.id, 'rent')}
+                      className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                    />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">🏠 Rent</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={preferences[member.id]?.rashan ?? true}
+                      onChange={() => handleToggle(member.id, 'rashan')}
+                      className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                    />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">🛒 Rashan</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={preferences[member.id]?.electricity ?? true}
+                      onChange={() => handleToggle(member.id, 'electricity')}
+                      className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                    />
+                    <span className="text-sm text-slate-700 dark:text-slate-300">⚡ Electricity</span>
+                  </label>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {error && (

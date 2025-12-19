@@ -11,7 +11,8 @@ import {
   doc, 
   updateDoc, 
   serverTimestamp,
-  orderBy
+  orderBy,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -75,6 +76,27 @@ export function useExpenses(periodId) {
     return docRef.id;
   };
 
+  const addBulkExpenses = async (expensesList) => {
+    if (!user) throw new Error('Must be logged in');
+    if (!periodId) throw new Error('Period ID required');
+
+    const batch = writeBatch(db);
+    const expensesRef = collection(db, 'expenses');
+
+    expensesList.forEach(expense => {
+      const newDocRef = doc(expensesRef);
+      batch.set(newDocRef, {
+        ...expense,
+        periodId,
+        createdBy: user.uid,
+        createdAt: serverTimestamp(),
+        expenseDate: expense.expenseDate || new Date(),
+      });
+    });
+
+    await batch.commit();
+  };
+
   const deleteExpense = async (expenseId, createdBy) => {
     if (!user) throw new Error('Must be logged in');
     
@@ -122,6 +144,7 @@ export function useExpenses(periodId) {
     loading,
     error,
     addExpense,
+    addBulkExpenses,
     deleteExpense,
     updateExpense,
     expensesByType,
