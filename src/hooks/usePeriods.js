@@ -265,6 +265,26 @@ export function usePeriods(groupId) {
     await syncRentSplit(periodId, newMembers);
   };
 
+  const deletePeriod = async (periodId) => {
+    if (!user) throw new Error('Must be logged in');
+    
+    // 1. Delete all expenses for this period
+    const expensesRef = collection(db, 'expenses');
+    const q = query(expensesRef, where('periodId', '==', periodId));
+    const snapshot = await getDocs(q);
+    
+    const batch = writeBatch(db);
+    snapshot.docs.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    
+    // 2. Delete the period document
+    const periodRef = doc(db, 'periods', periodId);
+    batch.delete(periodRef);
+    
+    await batch.commit();
+  };
+
   return {
     periods,
     activePeriod,
@@ -278,6 +298,7 @@ export function usePeriods(groupId) {
     addMemberToPeriod,
     removeMemberFromPeriod,
     syncRentSplit,
+    deletePeriod,
   };
 }
 

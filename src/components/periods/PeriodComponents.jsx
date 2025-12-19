@@ -180,6 +180,7 @@ export function PeriodSettingsModal({
   initialElectricityAmount,
   initialElectricityUnit,
   onSave, 
+  onDelete,
   loading 
 }) {
   const [preferences, setPreferences] = useState(initialPreferences || {});
@@ -321,14 +322,27 @@ export function PeriodSettingsModal({
           </div>
         )}
 
-        <div className="flex gap-3 pt-2">
-          <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
-            Cancel
-          </Button>
-          <Button type="submit" className="flex-1" loading={loading}>
-            Save Changes
-          </Button>
-        </div>
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
+              Cancel
+            </Button>
+            <Button type="submit" className="flex-1" loading={loading}>
+              Save Changes
+            </Button>
+          </div>
+          
+          <div className="pt-4 border-t border-slate-200 dark:border-slate-700 mt-4">
+            <Button 
+              type="button" 
+              variant="ghost" 
+              onClick={onDelete} 
+              className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+              loading={loading}
+            >
+              Delete Period
+            </Button>
+          </div>
+
       </form>
     </Modal>
   );

@@ -46,6 +46,8 @@ export function CollapsibleExpenseGroups({ expenses, members, onDelete, onEdit, 
                 onDelete={onDelete}
                 onEdit={onEdit}
                 period={period}
+                canDelete={true}
+                periodStatus={period.status}
               />
             ))}
           </div>
@@ -97,6 +99,8 @@ export function CollapsibleExpenseGroups({ expenses, members, onDelete, onEdit, 
                     onDelete={onDelete}
                     onEdit={onEdit}
                     period={period}
+                    canDelete={true}
+                    periodStatus={period.status}
                   />
                 ))}
               </div>

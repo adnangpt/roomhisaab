@@ -27,7 +27,7 @@ export default function PeriodPage({ params }) {
   const { group, loading: groupLoading } = useGroup(groupId);
   const { updateElectricityUnit } = useGroups();
   const { period, loading: periodLoading } = usePeriod(periodId);
-  const { closePeriod, confirmSettlement, completePeriod, updateMemberPreferences, addMemberToPeriod } = usePeriods(groupId);
+  const { closePeriod, confirmSettlement, completePeriod, updateMemberPreferences, addMemberToPeriod, deletePeriod } = usePeriods(groupId);
   const { expenses, loading: expensesLoading, addExpense, addBulkExpenses, deleteExpense, updateExpense, totalExpenses, expensesByType } = useExpenses(periodId);
   const { notes, loading: notesLoading, addNote } = useNotes(periodId);
   
@@ -179,6 +179,20 @@ export default function PeriodPage({ params }) {
     await updateElectricityUnit(groupId, unit);
   };
 
+  const handleDeletePeriod = async () => {
+    if (confirm('Are you sure you want to delete this ENTIRE period? This will delete all expenses within it and cannot be undone.')) {
+      setActionLoading(true);
+      try {
+        await deletePeriod(periodId);
+        router.push(`/group/${groupId}`);
+      } catch (error) {
+        console.error('Error deleting period:', error);
+        alert('Failed to delete period');
+        setActionLoading(false);
+      }
+    }
+  };
+
   if (authLoading || groupLoading || periodLoading || expensesLoading) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
@@ -211,7 +225,7 @@ export default function PeriodPage({ params }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-10">
       <Navbar />
       <PageContainer className="animate-slide-in">
         <PageHeader 
@@ -219,36 +233,54 @@ export default function PeriodPage({ params }) {
           subtitle={group.name}
           backHref={`/group/${groupId}`}
           action={
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               {period.status === 'active' && (
-                <div className="flex items-center gap-2">
+                <>
                   <Button 
-                    variant="secondary" 
+                    variant="ghost" 
                     size="sm"
                     onClick={() => setShowAddMemberModal(true)}
+                    className="h-9 px-2 sm:px-3 rounded-full text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-1"
                     title="Add Member"
                   >
-                    <span className="sm:hidden">👤+</span>
-                    <span className="hidden sm:inline">👤+ Add Member</span>
+                    <span className="text-lg">👤</span>
+                    <span className="hidden sm:inline text-xs">Add</span>
                   </Button>
                   <Button 
-                    variant="secondary" 
+                    variant="ghost" 
                     size="sm"
                     onClick={() => setShowSettingsModal(true)}
+                    className="h-9 px-2 sm:px-3 rounded-full text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 flex items-center gap-1"
                     title="Settings"
                   >
-                    <span className="sm:hidden">⚙️</span>
-                    <span className="hidden sm:inline">⚙️ Settings</span>
+                    <span className="text-lg">⚙️</span>
+                    <span className="hidden sm:inline text-xs">Settings</span>
                   </Button>
-                </div>
+                </>
               )}
-              <Badge variant="secondary" className="text-xs">
-                {activeMembers.length} {activeMembers.length === 1 ? 'member' : 'members'}
+              <Badge variant="secondary" className="text-xs whitespace-nowrap">
+                <span className="hidden xs:inline">{activeMembers.length} {activeMembers.length === 1 ? 'member' : 'members'}</span>
+                <span className="xs:hidden">{activeMembers.length} <span className="text-[10px]">👥</span></span>
               </Badge>
-              <StatusBadge status={period.status} />
+              <StatusBadge status={period.status} className="ml-1" />
             </div>
           }
         />
+
+
+        
+        {/* Primary Action Button */}
+        {period.status === 'active' && (
+          <div className="mb-6 flex justify-end">
+            <Button 
+              onClick={() => setShowAddExpenseModal(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md"
+            >
+              <span className="mr-2">+</span>
+              Add New Expense
+            </Button>
+          </div>
+        )}
 
         {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-3 mb-6">
@@ -385,18 +417,7 @@ export default function PeriodPage({ params }) {
           />
         </div>
 
-        {/* Floating Action Button */}
-        {period.status === 'active' && (
-          <div className="fixed bottom-6 right-6 safe-bottom">
-            <Button
-              onClick={() => setShowAddExpenseModal(true)}
-              size="xl"
-              className="w-14 h-14 rounded-full shadow-2xl shadow-indigo-500/40"
-            >
-              <span className="text-2xl">+</span>
-            </Button>
-          </div>
-        )}
+
 
       </PageContainer>
       
@@ -419,8 +440,12 @@ export default function PeriodPage({ params }) {
         members={activeMembers}
         initialPreferences={period.memberPreferences}
         initialRentAmount={period.totalRentAmount || group.totalRentAmount}
+        initialElectricityAmount={period.lastElectricityUnit ? null : null} // We don't store amount on period directly like rent yet, need to check logic. Wait, we just added it.
+        // Actually, we don't need to pass initialElectricityAmount if we don't persist it on the period doc same as rent.
+        // But let's stick to the task: connecting delete.
         initialElectricityUnit={period.lastElectricityUnit || group.lastElectricityUnit}
         onSave={handleSaveSettings}
+        onDelete={handleDeletePeriod}
         loading={actionLoading}
       />
 
