@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotification } from '@/contexts/NotificationContext';
 import { useGroup, useGroups } from '@/hooks/useGroups';
 import { usePeriod, usePeriods } from '@/hooks/usePeriods';
 import { useExpenses } from '@/hooks/useExpenses';
@@ -24,6 +25,7 @@ import { ExpenseSkeleton } from '@/components/ui/Skeleton';
 export default function PeriodPage({ params }) {
   const { groupId, periodId } = use(params);
   const { isAuthenticated, loading: authLoading, user } = useAuth();
+  const { showNotification } = useNotification();
   const { group, loading: groupLoading } = useGroup(groupId);
   const { updateElectricityUnit } = useGroups();
   const { period, loading: periodLoading } = usePeriod(periodId);
@@ -187,7 +189,7 @@ export default function PeriodPage({ params }) {
         router.push(`/group/${groupId}`);
       } catch (error) {
         console.error('Error deleting period:', error);
-        alert('Failed to delete period');
+        showNotification('Failed to delete period', 'error');
         setActionLoading(false);
       }
     }

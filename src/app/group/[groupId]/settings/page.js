@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotification } from '@/contexts/NotificationContext';
 import { useGroup, useGroups } from '@/hooks/useGroups';
 import { getUsersByIds } from '@/lib/auth';
 import { Navbar, PageContainer, PageHeader } from '@/components/layout/Layout';
@@ -15,6 +16,7 @@ import { PageLoader } from '@/components/ui/EmptyState';
 export default function GroupSettingsPage({ params }) {
   const { groupId } = use(params);
   const { isAuthenticated, loading: authLoading, user } = useAuth();
+  const { showNotification } = useNotification();
   const { group, loading: groupLoading } = useGroup(groupId);
   const { 
     updateElectricityUnit, 
@@ -118,7 +120,7 @@ export default function GroupSettingsPage({ params }) {
           } catch (err) {
             console.error(err);
             setConfirmation(prev => ({ ...prev, isOpen: false }));
-            alert(err.message);
+            showNotification(err.message, 'error');
           } finally {
             setConfirmation(prev => ({ ...prev, loading: false }));
           }
@@ -126,7 +128,7 @@ export default function GroupSettingsPage({ params }) {
       });
     } catch (err) {
       console.error(err);
-      alert('Failed to check balances');
+      showNotification('Failed to check balances', 'error');
     }
   };
 
@@ -145,7 +147,7 @@ export default function GroupSettingsPage({ params }) {
         } catch (err) {
           console.error(err);
           setConfirmation(prev => ({ ...prev, isOpen: false }));
-          alert('Failed to delete group: ' + err.message);
+          showNotification('Failed to delete group: ' + err.message, 'error');
         } finally {
           setConfirmation(prev => ({ ...prev, loading: false }));
         }

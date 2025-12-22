@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotification } from '@/contexts/NotificationContext';
 import { useGroup, useGroups } from '@/hooks/useGroups';
 import { usePeriods } from '@/hooks/usePeriods';
 import { getUsersByIds, getUserByPhone } from '@/lib/auth';
@@ -20,6 +21,7 @@ import { PeriodSkeleton, MemberSkeleton } from '@/components/ui/Skeleton';
 export default function GroupPage({ params }) {
   const { groupId } = use(params);
   const { isAuthenticated, loading: authLoading, user } = useAuth();
+  const { showNotification } = useNotification();
   const { group, loading: groupLoading } = useGroup(groupId);
   const { addMember, removeMember, checkUserBalances, leaveGroup } = useGroups();
   const { periods, activePeriod, loading: periodsLoading, createPeriod } = usePeriods(groupId);
@@ -119,7 +121,7 @@ export default function GroupPage({ params }) {
             console.error(err);
             // Show error in modal if needed, or just close
             setConfirmation(prev => ({ ...prev, isOpen: false }));
-            alert(err.message);
+            showNotification(err.message, 'error');
           } finally {
             setConfirmation(prev => ({ ...prev, loading: false }));
           }
@@ -127,7 +129,7 @@ export default function GroupPage({ params }) {
       });
     } catch (err) {
       console.error(err);
-      alert('Failed to check member balances');
+      showNotification('Failed to check member balances', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -166,7 +168,7 @@ export default function GroupPage({ params }) {
           } catch (err) {
             console.error(err);
             setConfirmation(prev => ({ ...prev, isOpen: false }));
-            alert(err.message);
+            showNotification(err.message, 'error');
           } finally {
             setConfirmation(prev => ({ ...prev, loading: false }));
           }
@@ -174,7 +176,7 @@ export default function GroupPage({ params }) {
       });
     } catch (err) {
       console.error(err);
-      alert('Failed to check balances');
+      showNotification('Failed to check balances', 'error');
     } finally {
       setActionLoading(false);
     }

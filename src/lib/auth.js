@@ -2,7 +2,9 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   signOut as firebaseSignOut,
-  updateProfile
+  updateProfile,
+  GoogleAuthProvider,
+  signInWithPopup
 } from 'firebase/auth';
 import { 
   doc, 
@@ -53,6 +55,21 @@ export async function signIn(phone, password) {
   const email = phoneToEmail(normalizedPhone);
   const userCredential = await signInWithEmailAndPassword(auth, email, password);
   return userCredential.user;
+}
+
+// Sign in with Google - Using Popup
+export async function signInWithGoogle() {
+  console.log('auth.js: Starting Google sign-in...');
+  const provider = new GoogleAuthProvider();
+  
+  try {
+    const result = await signInWithPopup(auth, provider);
+    console.log('auth.js: Google sign-in successful!', result.user.email);
+    return result.user;
+  } catch (error) {
+    console.error('auth.js: Google sign-in error:', error.code, error.message);
+    throw error;
+  }
 }
 
 // Sign out

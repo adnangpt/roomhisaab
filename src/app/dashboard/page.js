@@ -12,17 +12,21 @@ import { GroupSkeleton, StatsSkeleton } from '@/components/ui/Skeleton';
 import { UserStats } from '@/components/dashboard/UserStats';
 
 export default function DashboardPage() {
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, userProfile, loading: authLoading } = useAuth();
   const { groups, loading: groupsLoading, createGroup } = useGroups();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.push('/');
+    if (!authLoading) {
+      if (!isAuthenticated) {
+        router.push('/');
+      } else if (userProfile && !userProfile.phone) {
+        router.push('/onboarding');
+      }
     }
-  }, [isAuthenticated, authLoading, router]);
+  }, [isAuthenticated, userProfile, authLoading, router]);
 
   const handleCreateGroup = async (name) => {
     setCreateLoading(true);

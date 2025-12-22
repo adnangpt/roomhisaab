@@ -22,13 +22,17 @@ export const viewport = {
   ],
 };
 
+import { NotificationProvider } from "@/contexts/NotificationContext";
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased min-h-screen" suppressHydrationWarning>
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <NotificationProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </NotificationProvider>
       </body>
     </html>
   );

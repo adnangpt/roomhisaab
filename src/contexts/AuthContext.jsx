@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
-import { signUp as authSignUp, signIn as authSignIn, signOut as authSignOut } from '@/lib/auth';
+import { signUp as authSignUp, signIn as authSignIn, signOut as authSignOut, signInWithGoogle as authSignInWithGoogle } from '@/lib/auth';
 
 const AuthContext = createContext({});
 
@@ -12,9 +12,11 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      console.log('AuthContext: onAuthStateChanged - user:', firebaseUser?.email || 'null');
       if (firebaseUser) {
         setUser(firebaseUser);
         // Fetch user profile from Firestore
@@ -22,9 +24,13 @@ export function AuthProvider({ children }) {
           const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
           if (userDoc.exists()) {
             setUserProfile({ id: userDoc.id, ...userDoc.data() });
+          } else {
+            // New user (Google auth but no Firestore doc yet)
+            setUserProfile({ id: firebaseUser.uid, isNew: true });
           }
         } catch (error) {
           console.error('Error fetching user profile:', error);
+          setUserProfile({ id: firebaseUser.uid, isNew: true }); // Fallback
         }
       } else {
         setUser(null);
@@ -52,6 +58,11 @@ export function AuthProvider({ children }) {
     setUserProfile(null);
   };
 
+  const signInWithGoogle = async () => {
+    const user = await authSignInWithGoogle();
+    return user;
+  };
+
   const value = {
     user,
     userProfile,
@@ -59,6 +70,8 @@ export function AuthProvider({ children }) {
     signUp,
     signIn,
     signOut,
+    signInWithGoogle,
+    authError,
     isAuthenticated: !!user,
   };
 

@@ -7,16 +7,23 @@ import { LoginForm, SignupForm } from '@/components/auth/AuthForms';
 import { PageLoader } from '@/components/ui/EmptyState';
 
 export default function HomePage() {
-  const { isAuthenticated, loading, signIn, signUp } = useAuth();
+  const { isAuthenticated, userProfile, loading, signIn, signUp, signInWithGoogle, authError } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [authLoading, setAuthLoading] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
+    console.log('HomePage: Auth State Changed', { isAuthenticated, loading, phone: userProfile?.phone, isNew: userProfile?.isNew });
     if (!loading && isAuthenticated) {
-      router.push('/dashboard');
+      if (userProfile && (!userProfile.phone || userProfile.isNew)) {
+        console.log('HomePage: Redirecting to /onboarding');
+        router.push('/onboarding');
+      } else if (userProfile) {
+        console.log('HomePage: Redirecting to /dashboard');
+        router.push('/dashboard');
+      }
     }
-  }, [isAuthenticated, loading, router]);
+  }, [isAuthenticated, userProfile, loading, router]);
 
   const handleLogin = async (phone, password) => {
     setAuthLoading(true);
@@ -33,6 +40,18 @@ export default function HomePage() {
     try {
       await signUp(phone, password, displayName);
       router.push('/dashboard');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setAuthLoading(true);
+    try {
+      await signInWithGoogle();
+      // useEffect handles the redirect
+    } catch (err) {
+      console.error(err);
     } finally {
       setAuthLoading(false);
     }
@@ -68,17 +87,25 @@ export default function HomePage() {
             <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-6 text-center">
               {isLogin ? 'Welcome back' : 'Create account'}
             </h2>
+
+            {authError && (
+              <div className="mb-4 p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-sm border border-amber-200 dark:border-amber-800">
+                <strong>Important:</strong> {authError}
+              </div>
+            )}
             
             {isLogin ? (
               <LoginForm 
                 onSubmit={handleLogin}
                 onSwitchToSignup={() => setIsLogin(false)}
+                onGoogleLogin={handleGoogleLogin}
                 loading={authLoading}
               />
             ) : (
               <SignupForm 
                 onSubmit={handleSignup}
                 onSwitchToLogin={() => setIsLogin(true)}
+                onGoogleLogin={handleGoogleLogin}
                 loading={authLoading}
               />
             )}

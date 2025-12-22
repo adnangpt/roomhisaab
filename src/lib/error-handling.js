@@ -27,7 +27,7 @@ export function getAuthErrorMessage(error) {
       return 'Password is too weak. Please use at least 6 characters.';
     
     case 'auth/operation-not-allowed':
-      return 'Phone/Password authentication is not enabled. Please contact support.';
+      return 'This sign-in method (Google/Phone) is not enabled in the Firebase Console. Please ask the administrator to enable it.';
 
     // Network/General errors
     case 'auth/network-request-failed':
