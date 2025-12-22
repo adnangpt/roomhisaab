@@ -72,7 +72,7 @@ export function LoginForm({ onSubmit, onSwitchToSignup, onGoogleLogin, loading }
           <div className="w-full border-t border-slate-200 dark:border-slate-800"></div>
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-white dark:bg-slate-950 text-slate-500">OR</span>
+          <span className="px-2 bg-white dark:bg-slate-900 text-slate-500">OR</span>
         </div>
       </div>
 
@@ -203,7 +203,7 @@ export function SignupForm({ onSubmit, onSwitchToLogin, onGoogleLogin, loading }
           <div className="w-full border-t border-slate-200 dark:border-slate-800"></div>
         </div>
         <div className="relative flex justify-center text-sm">
-          <span className="px-2 bg-white dark:bg-slate-950 text-slate-500">OR</span>
+          <span className="px-2 bg-white dark:bg-slate-900 text-slate-500">OR</span>
         </div>
       </div>
 
