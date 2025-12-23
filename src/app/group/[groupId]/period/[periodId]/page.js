@@ -240,7 +240,7 @@ export default function PeriodPage({ params }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 pb-10">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <Navbar />
       <PageContainer className="animate-slide-in max-w-4xl mx-auto px-4">
         <PageHeader 
