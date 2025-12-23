@@ -27,6 +27,7 @@ export function SettlementView({
   const allConfirmed = period.activeMembers?.every(m => period.confirmedBy?.includes(m));
   
   const getMemberName = (id) => members.find(m => m.id === id)?.displayName || 'Unknown';
+  const getMemberPhone = (id) => members.find(m => m.id === id)?.phone || '';
 
   return (
     <div className="space-y-4">
@@ -56,6 +57,9 @@ export function SettlementView({
                       <span className="font-medium text-slate-700 dark:text-slate-300">
                         {getMemberName(userId)}
                         {userId === user?.uid && <span className="text-xs text-slate-400 ml-1">(You)</span>}
+                        {getMemberPhone(userId) && (
+                          <span className="text-[10px] text-slate-500 dark:text-slate-400 ml-1">• {getMemberPhone(userId)}</span>
+                        )}
                       </span>
                       <span className={`font-bold ${total >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                         {total >= 0 ? '+' : ''}{formatCurrency(total)}
@@ -89,7 +93,7 @@ export function SettlementView({
                       <p className="text-sm font-medium text-slate-900 dark:text-white">
                         {getMemberName(userId)} pays <span className="font-bold">{formatCurrency(amount)}</span>
                       </p>
-                      <p className="text-[10px] text-slate-500">to Landlord (Rent/Electricity)</p>
+                      <p className="text-[10px] text-slate-500">to Landlord (Rent/Electricity){getMemberPhone(userId) && ` • ${getMemberPhone(userId)}`}</p>
                     </div>
                   </div>
                 )
@@ -105,7 +109,7 @@ export function SettlementView({
                     <p className="text-sm font-medium text-slate-900 dark:text-white">
                       {getMemberName(s.from)} pays <span className="font-bold">{formatCurrency(s.amount)}</span>
                     </p>
-                    <p className="text-[10px] text-slate-500">to {getMemberName(s.to)} (Rashan/Other)</p>
+                    <p className="text-[10px] text-slate-500">to {getMemberName(s.to)} (Rashan/Other){getMemberPhone(s.to) && ` • ${getMemberPhone(s.to)}`}</p>
                   </div>
                 </div>
               ))}

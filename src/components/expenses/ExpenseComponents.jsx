@@ -24,7 +24,10 @@ export function ExpenseCard({ expense, members, onDelete, canDelete, periodStatu
   const payer = members.find(m => m.id === expense.paidBy);
   
   return (
-    <div className="group relative bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-all shadow-sm hover:shadow-md animate-slide-up">
+    <div 
+      className="group relative bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-900/50 shadow-sm hover:shadow-lg hover:scale-[1.01] hover:-translate-y-0.5 animate-slide-up"
+      style={{ transition: 'all 0.3s ease-in-out' }}
+    >
       <div className="flex items-center gap-3">
         {/* Icon */}
         <div className="w-10 h-10 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-xl shrink-0">

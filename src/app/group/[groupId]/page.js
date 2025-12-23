@@ -303,6 +303,9 @@ export default function GroupPage({ params }) {
                         {member.displayName}
                         {member.id === user?.uid && <span className="text-slate-400 ml-1">(You)</span>}
                       </p>
+                      {member.phone && (
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400">{member.phone}</p>
+                      )}
                     </div>
                     {member.id !== user?.uid && (
                       <IconButton

@@ -18,6 +18,7 @@ import { SettlementView, NotesSection } from '@/components/settlements/Settlemen
 import { Button, IconButton } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Badge, StatusBadge } from '@/components/ui/Badge';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 import { EmptyState, PageLoader } from '@/components/ui/EmptyState';
 import { ExpenseSkeleton } from '@/components/ui/Skeleton';
@@ -42,6 +43,7 @@ export default function PeriodPage({ params }) {
   const [editingExpense, setEditingExpense] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [showMemberDropdown, setShowMemberDropdown] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
   
   const router = useRouter();
 
@@ -104,14 +106,20 @@ export default function PeriodPage({ params }) {
       return;
     }
 
-    if (confirm('Are you sure you want to delete this expense?')) {
-      setActionLoading(true);
-      try {
-        await deleteExpense(expenseId, createdBy);
-      } finally {
-        setActionLoading(false);
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Expense',
+      message: 'Are you sure you want to delete this expense? This action cannot be undone.',
+      onConfirm: async () => {
+        setActionLoading(true);
+        try {
+          await deleteExpense(expenseId, createdBy);
+        } finally {
+          setActionLoading(false);
+          setConfirmDialog({ isOpen: false, title: '', message: '', onConfirm: null });
+        }
       }
-    }
+    });
   };
 
   const handleEditExpense = async (expenseId, expenseData) => {
@@ -129,14 +137,20 @@ export default function PeriodPage({ params }) {
   };
 
   const handleClosePeriod = async () => {
-    if (confirm('Are you sure you want to close this period? Expenses will become read-only.')) {
-      setActionLoading(true);
-      try {
-        await closePeriod(periodId);
-      } finally {
-        setActionLoading(false);
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Close Period',
+      message: 'Are you sure you want to close this period? Expenses will become read-only and you can proceed to settlement.',
+      onConfirm: async () => {
+        setActionLoading(true);
+        try {
+          await closePeriod(periodId);
+        } finally {
+          setActionLoading(false);
+          setConfirmDialog({ isOpen: false, title: '', message: '', onConfirm: null });
+        }
       }
-    }
+    });
   };
 
   const handleConfirmSettlement = async (userId) => {
@@ -195,17 +209,24 @@ export default function PeriodPage({ params }) {
   };
 
   const handleDeletePeriod = async () => {
-    if (confirm('Are you sure you want to delete this ENTIRE period? This will delete all expenses within it and cannot be undone.')) {
-      setActionLoading(true);
-      try {
-        await deletePeriod(periodId);
-        router.push(`/group/${groupId}`);
-      } catch (error) {
-        console.error('Error deleting period:', error);
-        showNotification('Failed to delete period', 'error');
-        setActionLoading(false);
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Period',
+      message: 'Are you sure you want to delete this ENTIRE period? This will permanently delete all expenses within it and cannot be undone.',
+      onConfirm: async () => {
+        setActionLoading(true);
+        try {
+          await deletePeriod(periodId);
+          router.push(`/group/${groupId}`);
+        } catch (error) {
+          console.error('Error deleting period:', error);
+          showNotification('Failed to delete period', 'error');
+        } finally {
+          setActionLoading(false);
+          setConfirmDialog({ isOpen: false, title: '', message: '', onConfirm: null });
+        }
       }
-    }
+    });
   };
 
   if (authLoading || groupLoading || periodLoading || expensesLoading) {
@@ -305,7 +326,7 @@ export default function PeriodPage({ params }) {
               
               {/* Members Dropdown */}
               {showMemberDropdown && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 z-50 overflow-hidden">
+                <div className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 z-50 overflow-hidden animate-slide-down">
                   <div className="p-3 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
                     <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Active Members</h4>
                   </div>
@@ -437,6 +458,9 @@ export default function PeriodPage({ params }) {
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 truncate">
                       {member.displayName}
                     </p>
+                    {member.phone && (
+                      <p className="text-[9px] text-slate-500 dark:text-slate-400 mb-2">{member.phone}</p>
+                    )}
                     <p className="text-lg font-extrabold text-slate-900 dark:text-white">
                       {formatCurrency(totalPaid)}
                     </p>
@@ -508,7 +532,7 @@ export default function PeriodPage({ params }) {
       {period.status === 'active' && (
         <button
           onClick={() => setShowAddExpenseModal(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-2xl flex items-center justify-center z-50 transition-all hover:scale-110 active:scale-95 sm:hidden"
+          className="fixed bottom-6 right-6 w-14 h-14 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-2xl flex items-center justify-center z-50 transition-all hover:scale-110 active:scale-95 sm:hidden animate-pulse"
         >
           <span className="text-2xl font-bold">+</span>
         </button>
@@ -561,6 +585,15 @@ export default function PeriodPage({ params }) {
         onSubmit={handleEditExpense}
         members={activeMembers}
         expense={editingExpense}
+        loading={actionLoading}
+      />
+
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ isOpen: false, title: '', message: '', onConfirm: null })}
+        onConfirm={confirmDialog.onConfirm}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
         loading={actionLoading}
       />
     </div>

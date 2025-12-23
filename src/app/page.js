@@ -68,23 +68,23 @@ export default function HomePage() {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-indigo-50 to-purple-50 dark:from-slate-950 dark:via-indigo-950/30 dark:to-purple-950/30">
       {/* Hero Section */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 md:py-12">
-        <div className="text-center mb-6 md:mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-3xl bg-gradient-to-br from-indigo-600 to-purple-600 shadow-xl shadow-indigo-500/30 mb-4 md:mb-6">
-            <span className="text-3xl md:text-4xl">💰</span>
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-4 md:py-8">
+        <div className="text-center mb-4 md:mb-6">
+          <div className="inline-flex items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-3xl bg-gradient-to-br from-indigo-600 to-purple-600 shadow-xl shadow-indigo-500/30 mb-3 md:mb-4">
+            <span className="text-2xl md:text-3xl">💰</span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-2 md:mb-3">
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white mb-1 md:mb-2">
             Room Hisaab
           </h1>
-          <p className="text-base md:text-lg text-slate-600 dark:text-slate-400 max-w-sm mx-auto">
+          <p className="text-sm md:text-base text-slate-600 dark:text-slate-400 max-w-sm mx-auto">
             Split expenses with roommates. Track, settle, and stay organized.
           </p>
         </div>
 
         {/* Auth Card */}
         <div className="w-full max-w-sm">
-          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-800 p-6 md:p-8">
-            <h2 className="text-xl font-semibold text-slate-900 dark:text-white mb-6 text-center">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-200 dark:border-slate-800 p-5 md:p-6">
+            <h2 className="text-lg md:text-xl font-semibold text-slate-900 dark:text-white mb-4 md:mb-5 text-center">
               {isLogin ? 'Welcome back' : 'Create account'}
             </h2>
 
@@ -114,9 +114,9 @@ export default function HomePage() {
       </div>
 
       {/* Footer */}
-      <footer className="py-6 md:py-8 text-center text-xs md:text-sm text-slate-500 dark:text-slate-400">
-        <p className="mb-1 opacity-75 italic">Made with ❤️ for roommates everywhere</p>
-        <p className="font-semibold text-slate-900 dark:text-white mt-2">
+      <footer className="py-3 md:py-4 text-center text-xs text-slate-500 dark:text-slate-400">
+        <p className="mb-0.5 opacity-75 italic">Made with ❤️ for roommates everywhere</p>
+        <p className="font-semibold text-slate-900 dark:text-white">
           Made by{' '}
           <a 
             href="https://www.linkedin.com/in/adnan18298/" 
