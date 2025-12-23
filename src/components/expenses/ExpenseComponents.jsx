@@ -8,12 +8,12 @@ import { Input, Textarea } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
 import { formatCurrency, getExpenseTypeIcon, getExpenseTypeLabel } from '@/lib/calculations';
 import { useAuth } from '@/contexts/AuthContext';
+import { DEFAULT_EXPENSE_TYPES } from '@/hooks/useGroups';
 
 export function ExpenseCard({ expense, members, onDelete, canDelete, periodStatus }) {
   const { user } = useAuth();
   const isCreator = user?.uid === expense.createdBy;
-  const canDeleteExpense = canDelete && isCreator && periodStatus === 'active';
-  const canEditExpense = canDelete && isCreator && periodStatus === 'active';
+  const isAllowed = (canDelete && isCreator) || (canDelete && periodStatus === 'active');
   const isExternal = expense.paidBy === '__EXTERNAL__';
   
   const getMemberName = (id) => {
@@ -22,26 +22,20 @@ export function ExpenseCard({ expense, members, onDelete, canDelete, periodStatu
   };
 
   const payer = members.find(m => m.id === expense.paidBy);
-  const typeIcons = {
-    rent: '🏠',
-    rashan: '🛒',
-    electricity: '⚡',
-    other: '💸'
-  };
-
+  
   return (
     <div className="group relative bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-900/50 transition-all shadow-sm hover:shadow-md animate-slide-up">
       <div className="flex items-center gap-3">
         {/* Icon */}
         <div className="w-10 h-10 rounded-lg bg-slate-50 dark:bg-slate-800 flex items-center justify-center text-xl shrink-0">
-          {typeIcons[expense.type] || '💸'}
+          {getExpenseTypeIcon(expense.type)}
         </div>
 
         {/* Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
             <h4 className="font-semibold text-slate-900 dark:text-white truncate text-sm">
-              {expense.type === 'rent' ? 'Rent' : expense.type === 'electricity' ? 'Electricity' : expense.description || 'Expense'}
+              {expense.type === 'rent' ? 'Rent' : expense.type === 'electricity' ? 'Electricity' : (expense.description || getExpenseTypeLabel(expense.type))}
             </h4>
             <span className="font-bold text-slate-900 dark:text-white text-sm shrink-0">
               {formatCurrency(expense.amount)}
@@ -64,7 +58,7 @@ export function ExpenseCard({ expense, members, onDelete, canDelete, periodStatu
         </div>
 
         {/* Actions */}
-        {canDelete && (
+        {isAllowed && (
           <div className="flex items-center gap-1 ml-2">
             <IconButton
               variant="ghost"
@@ -102,11 +96,12 @@ export function AddExpenseModal({
   totalRentAmount,
   memberPreferences,
   onUpdateElectricity,
+  expenseTypes = [],
   loading 
 }) {
   const { user } = useAuth();
   const [mode, setMode] = useState('single'); // 'single' or 'bulk'
-  const [type, setType] = useState('rashan');
+  const [type, setType] = useState('other');
   const [amount, setAmount] = useState('');
   const [bulkAmounts, setBulkAmounts] = useState('');
   const [paidBy, setPaidBy] = useState('');
@@ -243,7 +238,7 @@ export function AddExpenseModal({
 
   const resetForm = () => {
     setMode('single');
-    setType('rashan');
+    setType('other');
     setAmount('');
     setBulkAmounts('');
     setDescription('');
@@ -264,11 +259,11 @@ export function AddExpenseModal({
     onClose();
   };
 
-  const expenseTypes = [
-    { value: 'rent', label: '🏠 Rent' },
-    { value: 'rashan', label: '🛒 Rashan' },
-    { value: 'electricity', label: '⚡ Electricity' },
-    { value: 'other', label: '💸 Other' },
+  const availableTypes = expenseTypes.length > 0 ? expenseTypes : [
+    { id: 'rent', label: 'Rent', icon: '🏠' },
+    { id: 'rashan', label: 'Rashan', icon: '🛒' },
+    { id: 'electricity', label: 'Electricity', icon: '⚡' },
+    { id: 'other', label: 'Other', icon: '💸' },
   ];
 
   return (
@@ -304,19 +299,20 @@ export function AddExpenseModal({
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             Type
           </label>
-          <div className="flex gap-2">
-            {expenseTypes.map((t) => (
+          <div className="flex flex-wrap gap-2">
+            {availableTypes.map((t) => (
               <button
-                key={t.value}
+                key={t.id}
                 type="button"
-                onClick={() => setType(t.value)}
-                className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all ${
-                  type === t.value
+                onClick={() => setType(t.id)}
+                className={`py-2 px-3 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 ${
+                  type === t.id
                     ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >
-                {t.label}
+                <span>{t.icon}</span>
+                <span>{t.label}</span>
               </button>
             ))}
           </div>
@@ -362,14 +358,17 @@ export function AddExpenseModal({
               rows={5}
               className="font-mono"
             />
-            <div className="flex items-center justify-between mt-2">
-              <p className="text-[10px] text-slate-500">
-                Tip: You can copy-paste a list of numbers from your notes.
+            <div className="flex items-center justify-between mt-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+              <p className="text-[10px] text-slate-500 leading-tight">
+                Tip: You can copy-paste a list<br/>of numbers from your notes.
               </p>
               {bulkTotal > 0 && (
-                <p className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-                  Total: ₹{bulkTotal.toLocaleString('en-IN')}
-                </p>
+                <div className="text-right">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Bulk Total</p>
+                  <p className="text-lg font-black text-indigo-600 dark:text-indigo-400">
+                    ₹{bulkTotal.toLocaleString('en-IN')}
+                  </p>
+                </div>
               )}
             </div>
           </div>
@@ -483,9 +482,10 @@ export function EditExpenseModal({
   onSubmit, 
   members, 
   expense,
+  expenseTypes = [],
   loading 
 }) {
-  const [type, setType] = useState(expense?.type || 'rashan');
+  const [type, setType] = useState(expense?.type || 'other');
   const [amount, setAmount] = useState(expense?.amount?.toString() || '');
   const [paidBy, setPaidBy] = useState(expense?.paidBy || '');
   const [includedMembers, setIncludedMembers] = useState(expense?.includedMembers || []);
@@ -560,10 +560,11 @@ export function EditExpenseModal({
     );
   };
 
-  const expenseTypes = [
-    { value: 'rent', label: '🏠 Rent' },
-    { value: 'rashan', label: '🛒 Rashan' },
-    { value: 'electricity', label: '⚡ Electricity' },
+  const availableTypes = expenseTypes.length > 0 ? expenseTypes : [
+    { id: 'rent', label: 'Rent', icon: '🏠' },
+    { id: 'rashan', label: 'Rashan', icon: '🛒' },
+    { id: 'electricity', label: 'Electricity', icon: '⚡' },
+    { id: 'other', label: 'Other', icon: '💸' },
   ];
 
   return (
@@ -573,19 +574,20 @@ export function EditExpenseModal({
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
             Type
           </label>
-          <div className="flex gap-2">
-            {expenseTypes.map((t) => (
+          <div className="flex flex-wrap gap-2">
+            {availableTypes.map((t) => (
               <button
-                key={t.value}
+                key={t.id}
                 type="button"
-                onClick={() => setType(t.value)}
-                className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all ${
-                  type === t.value
+                onClick={() => setType(t.id)}
+                className={`py-2 px-3 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 ${
+                  type === t.id
                     ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
                     : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >
-                {t.label}
+                <span>{t.icon}</span>
+                <span>{t.label}</span>
               </button>
             ))}
           </div>

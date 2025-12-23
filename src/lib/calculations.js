@@ -153,21 +153,29 @@ export function formatCurrency(amount) {
 }
 
 // Get expense type label
-export function getExpenseTypeLabel(type) {
+export function getExpenseTypeLabel(type, customTypes = []) {
+  const customType = customTypes.find(t => t.id === type);
+  if (customType) return customType.label;
+
   const labels = {
     rent: 'Rent',
     rashan: 'Rashan',
     electricity: 'Electricity',
+    other: 'Other'
   };
   return labels[type] || type;
 }
 
 // Get expense type icon
-export function getExpenseTypeIcon(type) {
+export function getExpenseTypeIcon(type, customTypes = []) {
+  const customType = customTypes.find(t => t.id === type);
+  if (customType) return customType.icon;
+
   const icons = {
     rent: '🏠',
     rashan: '🛒',
     electricity: '⚡',
+    other: '💸',
   };
   return icons[type] || '💰';
 }

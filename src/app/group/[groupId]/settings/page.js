@@ -4,7 +4,7 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
-import { useGroup, useGroups } from '@/hooks/useGroups';
+import { useGroup, useGroups, DEFAULT_EXPENSE_TYPES } from '@/hooks/useGroups';
 import { getUsersByIds } from '@/lib/auth';
 import { Navbar, PageContainer, PageHeader } from '@/components/layout/Layout';
 import { Button } from '@/components/ui/Button';
@@ -19,8 +19,8 @@ export default function GroupSettingsPage({ params }) {
   const { showNotification } = useNotification();
   const { group, loading: groupLoading } = useGroup(groupId);
   const { 
-    updateElectricityUnit, 
     updateTotalRentAmount, 
+    updateExpenseTypes,
     checkUserBalances, 
     leaveGroup,
     deleteGroup
@@ -34,6 +34,10 @@ export default function GroupSettingsPage({ params }) {
 
   const [savingRent, setSavingRent] = useState(false);
   const [savedRent, setSavedRent] = useState(false);
+
+  const [newTypeName, setNewTypeName] = useState('');
+  const [newTypeIcon, setNewTypeIcon] = useState('💰');
+  const [isAddingType, setIsAddingType] = useState(false);
   
   const [confirmation, setConfirmation] = useState({
     isOpen: false,
@@ -84,6 +88,38 @@ export default function GroupSettingsPage({ params }) {
       setTimeout(() => setSavedRent(false), 2000);
     } finally {
       setSavingRent(false);
+    }
+  };
+
+  const handleAddType = async () => {
+    if (!newTypeName.trim()) return;
+    
+    const newType = {
+      id: newTypeName.toLowerCase().replace(/\s+/g, '-'),
+      label: newTypeName,
+      icon: newTypeIcon,
+      permanent: false
+    };
+
+    const updatedTypes = [...(group.expenseTypes || DEFAULT_EXPENSE_TYPES), newType];
+    try {
+      await updateExpenseTypes(groupId, updatedTypes);
+      setNewTypeName('');
+      setNewTypeIcon('💰');
+      setIsAddingType(false);
+      showNotification('Category added successfully', 'success');
+    } catch (err) {
+      showNotification('Failed to add category', 'error');
+    }
+  };
+
+  const handleDeleteType = async (typeId) => {
+    const updatedTypes = (group.expenseTypes || DEFAULT_EXPENSE_TYPES).filter(t => t.id !== typeId);
+    try {
+      await updateExpenseTypes(groupId, updatedTypes);
+      showNotification('Category removed', 'success');
+    } catch (err) {
+      showNotification('Failed to remove category', 'error');
     }
   };
 
@@ -229,6 +265,83 @@ export default function GroupSettingsPage({ params }) {
               >
                 {savedRent ? '✓ Saved' : 'Save'}
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Expense Categories */}
+        <Card className="mb-6">
+          <CardHeader>
+            <div className="flex items-center justify-between w-full">
+              <h3 className="font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+                📂 Expense Categories
+              </h3>
+              <Button 
+                size="sm" 
+                variant="secondary"
+                onClick={() => setIsAddingType(!isAddingType)}
+              >
+                {isAddingType ? 'Cancel' : '+ Add New'}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {isAddingType && (
+              <div className="p-4 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-3 animate-in fade-in slide-in-from-top-2">
+                <div className="grid grid-cols-4 gap-3">
+                  <div className="col-span-1">
+                    <Input
+                      label="Icon"
+                      value={newTypeIcon}
+                      onChange={(e) => setNewTypeIcon(e.target.value)}
+                      placeholder="💰"
+                      className="text-center text-xl"
+                    />
+                  </div>
+                  <div className="col-span-3">
+                    <Input
+                      label="Category Name"
+                      value={newTypeName}
+                      onChange={(e) => setNewTypeName(e.target.value)}
+                      placeholder="e.g. Internet"
+                    />
+                  </div>
+                </div>
+                <Button 
+                  fullWidth 
+                  onClick={handleAddType}
+                  disabled={!newTypeName.trim()}
+                >
+                  Confirm Add
+                </Button>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 gap-2">
+              {(group.expenseTypes || DEFAULT_EXPENSE_TYPES).map((type) => (
+                <div 
+                  key={type.id}
+                  className="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-xl">{type.icon}</span>
+                    <span className="font-medium text-slate-900 dark:text-white">{type.label}</span>
+                    {type.permanent && (
+                      <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">System</span>
+                    )}
+                  </div>
+                  {!type.permanent && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/10"
+                      onClick={() => handleDeleteType(type.id)}
+                    >
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

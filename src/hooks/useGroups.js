@@ -19,6 +19,13 @@ import { db } from '@/lib/firebase';
 import { useAuth } from '@/contexts/AuthContext';
 import { calculateNetBalances } from '@/lib/calculations';
 
+export const DEFAULT_EXPENSE_TYPES = [
+  { id: 'rent', label: 'Rent', icon: '🏠', permanent: false },
+  { id: 'electricity', label: 'Electricity', icon: '⚡', permanent: false },
+  { id: 'rashan', label: 'Rashan', icon: '🛒', permanent: false },
+  { id: 'other', label: 'Other', icon: '💸', permanent: true },
+];
+
 export function useGroups() {
   const { user } = useAuth();
   const [groups, setGroups] = useState([]);
@@ -65,6 +72,7 @@ export function useGroups() {
       lastElectricityUnit: 0,
       members: [user.uid],
       createdBy: user.uid,
+      expenseTypes: DEFAULT_EXPENSE_TYPES,
     };
 
     const docRef = await addDoc(collection(db, 'groups'), groupData);
@@ -210,6 +218,13 @@ export function useGroups() {
     });
   };
 
+  const updateExpenseTypes = async (groupId, types) => {
+    const groupRef = doc(db, 'groups', groupId);
+    await updateDoc(groupRef, {
+      expenseTypes: types,
+    });
+  };
+
   const deleteGroup = async (groupId) => {
     if (!user) throw new Error('Must be logged in');
     
@@ -256,6 +271,7 @@ export function useGroups() {
     checkUserBalances,
     updateElectricityUnit,
     updateTotalRentAmount,
+    updateExpenseTypes,
     deleteGroup,
   };
 }
