@@ -24,6 +24,8 @@ export const viewport = {
 
 import { NotificationProvider } from "@/contexts/NotificationContext";
 
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -31,6 +33,7 @@ export default function RootLayout({ children }) {
         <NotificationProvider>
           <AuthProvider>
             {children}
+            <InstallPrompt />
           </AuthProvider>
         </NotificationProvider>
       </body>
